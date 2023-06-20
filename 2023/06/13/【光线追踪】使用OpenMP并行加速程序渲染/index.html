@@ -1,0 +1,193 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>【光线追踪】使用OpenMP并行加速程序渲染 | Neo's Blog</title><meta name="author" content="Neo"><meta name="copyright" content="Neo"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="前言： 此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（拿出来给大家开心一下）  平台：Windows 工具：cmake  如何在cmake中开启OpenMP先看CMakeLists.txt中需要增加什么代码 # omp 并行find_package(OpenMP REQUIRED)# 设置项目最终需要链接的listset(P">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【光线追踪】使用OpenMP并行加速程序渲染">
+<meta property="og:url" content="http://example.com/2023/06/13/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/index.html">
+<meta property="og:site_name" content="Neo&#39;s Blog">
+<meta property="og:description" content="前言： 此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（拿出来给大家开心一下）  平台：Windows 工具：cmake  如何在cmake中开启OpenMP先看CMakeLists.txt中需要增加什么代码 # omp 并行find_package(OpenMP REQUIRED)# 设置项目最终需要链接的listset(P">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/img/avatar.png">
+<meta property="article:published_time" content="2023-06-13T03:32:27.000Z">
+<meta property="article:modified_time" content="2023-06-16T08:45:27.448Z">
+<meta property="article:author" content="Neo">
+<meta property="article:tag" content="光线追踪">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="优化">
+<meta property="article:tag" content="并行计算">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/avatar.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2023/06/13/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":500},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '【光线追踪】使用OpenMP并行加速程序渲染',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2023-06-16 16:45:27'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+    win.getCSS = (url,id = false) => new Promise((resolve, reject) => {
+      const link = document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = url
+      if (id) link.id = id
+      link.onerror = reject
+      link.onload = link.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        link.onload = link.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(link)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 6.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">4</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间线</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a href="/" title="Neo's Blog"><span class="site-name">Neo's Blog</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间线</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">【光线追踪】使用OpenMP并行加速程序渲染</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2023-06-13T03:32:27.000Z" title="发表于 2023-06-13 11:32:27">2023-06-13</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2023-06-16T08:45:27.448Z" title="更新于 2023-06-16 16:45:27">2023-06-16</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA/">光线追踪</a></span></div><div class="meta-secondline"></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p><strong>前言</strong>： 此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（<del>拿出来给大家开心一下</del>）</p>
+<ul>
+<li>平台：Windows</li>
+<li>工具：cmake</li>
+</ul>
+<h1 id="如何在cmake中开启OpenMP"><a href="#如何在cmake中开启OpenMP" class="headerlink" title="如何在cmake中开启OpenMP"></a>如何在cmake中开启OpenMP</h1><p>先看<code>CMakeLists.txt</code>中需要<strong>增加</strong>什么代码</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta"># omp 并行</span></span><br><span class="line"><span class="built_in">find_package</span>(OpenMP REQUIRED)</span><br><span class="line"></span><br><span class="line"># 设置项目最终需要链接的<span class="function">list</span></span><br><span class="line"><span class="function"><span class="title">set</span><span class="params">(PROJ_INCLUDE_DIRS)</span></span></span><br><span class="line"><span class="function"><span class="title">set</span><span class="params">(PROJ_LIBS)</span></span></span><br><span class="line"><span class="function"><span class="title">set</span><span class="params">(PROJ_COMPILE_OPTIONS)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">list</span><span class="params">(APPEND PROJ_LIBS $&#123;OpenMP_CXX_LIBRARIES&#125;)</span></span></span><br><span class="line"><span class="function"><span class="title">list</span><span class="params">(APPEND PROJ_INCLUDE_DIRS $&#123;OpenMP_CXX_INCLUDE_DIRS&#125;)</span></span></span><br><span class="line"><span class="function"><span class="title">list</span><span class="params">(APPEND PROJ_COMPILE_OPTIONS $&#123;OpenMP_CXX_FLAGS&#125;)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"># 进行链接</span></span><br><span class="line"><span class="function"><span class="title">add_executable</span><span class="params">(test main.cpp)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">target_include_directories</span><span class="params">(test PRIVATE $&#123;PROJ_INCLUDE_DIRS&#125;)</span></span></span><br><span class="line"><span class="function"><span class="title">target_compile_options</span><span class="params">(test PRIVATE $&#123;PROJ_COMPILE_OPTIONS&#125;)</span></span></span><br><span class="line"><span class="function"><span class="title">target_link_libraries</span><span class="params">(test PRIVATE $&#123;PROJ_LIBS&#125;)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>有了编译条件，我们来看一下在程序中如何使用</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;omp.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="meta">#<span class="keyword">pragma</span> omp parallel </span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;hello world&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>在头文件中include <code>omp.h</code></li>
+<li>在需要并行运行的代码块前添加语句<code>#pragma omp parallel</code></li>
+</ol>
+<p>我们将代码编译并运行后的结果：<br><img src="/pic%5C2023_6_13_1.jpg"><br>可见，一行代码被运行了16次，omp并行在正常运行，接下来使用到光追中吧</p>
+<h1 id="在光追中使用omp"><a href="#在光追中使用omp" class="headerlink" title="在光追中使用omp"></a>在光追中使用omp</h1><p>光线追踪算法中，从相机出发，逐像素发射一系列光线，跟踪每一条光线得到像素点的值，遍历像素一般是用两个嵌套的for循环来做，这个过程显然可以进行并行计算。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; Height; ++i)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; Width; ++j)&#123;</span><br><span class="line">        <span class="comment">// Generate Rays</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// for ray in Rays:   trace(ray) ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然而，根据上文的情况看来，使用<code>#pragma omp parallel</code>，会让这个嵌套for循环执行10次，并不会加速算法<br>正确方法是在语句后加上<code>for</code>，即可以对（嵌套）for循环的代码块进行并行运算。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">pragma</span> omp parallel for</span></span><br><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; Height; ++i)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; Width; ++j)&#123;</span><br><span class="line">        <span class="comment">// Generate Rays</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// for ray in Rays:   trace(ray) ...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意：for循环中的代码片段应是独立得到结果，互不干扰才能正常运行</strong></p>
+<h1 id="错误示例"><a href="#错误示例" class="headerlink" title="错误示例"></a>错误示例</h1><p>我在做GAMES101的作业7时，在实现并行运算的过程中得到了这样的结果：<br><img src="/pic%5C2023_6_16_1.png"><br>原因是GAMES提供的框架中，在得到光线结果后，对framebuffer的取值用的是m，且每次循环结束时m++，这就导致不同进程相互干扰，得到错误的结果</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; Height; ++i)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; Width; ++j)&#123;</span><br><span class="line">        <span class="comment">// Generate Rays</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// for ray in Rays:   trace(ray) ...</span></span><br><span class="line">        framebuffer[m] = <span class="built_in">trace</span>(ray);</span><br><span class="line">        m++;  <span class="comment">//错误示范</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="http://example.com">Neo</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2023/06/13/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/">http://example.com/2023/06/13/【光线追踪】使用OpenMP并行加速程序渲染/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://example.com" target="_blank">Neo's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA/">光线追踪</a><a class="post-meta__tags" href="/tags/C/">C++</a><a class="post-meta__tags" href="/tags/%E4%BC%98%E5%8C%96/">优化</a><a class="post-meta__tags" href="/tags/%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97/">并行计算</a></div><div class="post_share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-full"><a href="/2023/06/19/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E9%87%87%E6%A0%B7%E6%89%80%E9%9C%80%E8%A6%81%E7%9A%84%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90%EF%BC%88Windows%E4%B8%8Bg-%E7%9A%84%E5%9D%91%EF%BC%89/" title="【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g++的坑）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g++的坑）</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/2023/06/19/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E9%87%87%E6%A0%B7%E6%89%80%E9%9C%80%E8%A6%81%E7%9A%84%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90%EF%BC%88Windows%E4%B8%8Bg-%E7%9A%84%E5%9D%91%EF%BC%89/" title="【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g++的坑）"><div class="cover" style="background: var(--default-bg-color)"></div><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2023-06-19</div><div class="title">【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g++的坑）</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E5%9C%A8cmake%E4%B8%AD%E5%BC%80%E5%90%AFOpenMP"><span class="toc-number">1.</span> <span class="toc-text">如何在cmake中开启OpenMP</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9C%A8%E5%85%89%E8%BF%BD%E4%B8%AD%E4%BD%BF%E7%94%A8omp"><span class="toc-number">2.</span> <span class="toc-text">在光追中使用omp</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%94%99%E8%AF%AF%E7%A4%BA%E4%BE%8B"><span class="toc-number">3.</span> <span class="toc-text">错误示例</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2023 By Neo</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div></div></body></html>
