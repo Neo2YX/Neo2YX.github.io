@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>【光线追踪】使用OpenMP并行加速程序渲染 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="前言：此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（拿出来给大家开心一下）  平台：Windows 工具：cmake  &lt;a href&#x3D;”#如何在cmake中开启OpenMP” class&#x3D;”headerlink”title&#x3D;”如何在cmake中开启OpenMP”&gt;如何在cm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【光线追踪】使用OpenMP并行加速程序渲染">
+<meta property="og:url" content="http://example.com/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言：此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（拿出来给大家开心一下）  平台：Windows 工具：cmake  &lt;a href&#x3D;”#如何在cmake中开启OpenMP” class&#x3D;”headerlink”title&#x3D;”如何在cmake中开启OpenMP”&gt;如何在cm">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/pic%5C2023_6_13_1.jpg">
+<meta property="og:image" content="http://example.com/pic%5C2023_6_16_1.png">
+<meta property="article:published_time" content="2026-06-09T09:40:59.000Z">
+<meta property="article:modified_time" content="2026-06-09T09:44:23.971Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="光追 渲染">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/pic%5C2023_6_13_1.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-【光线追踪】使用OpenMP并行加速程序渲染" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/" class="article-date">
+  <time class="dt-published" datetime="2026-06-09T09:40:59.000Z" itemprop="datePublished">2026-06-09</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      【光线追踪】使用OpenMP并行加速程序渲染
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <div id="content-inner" class="layout" role="main">
+
+<div id="post">
+
+<p><strong>前言</strong>：<br>此文章是第一篇关于光线追踪中细节的工具文章，不会涉及太多原理，更多的是在实际项目中的一个可参考方案及我所踩过的坑的记录（<del>拿出来给大家开心一下</del>）</p>
+<ul>
+<li>平台：Windows</li>
+<li>工具：cmake</li>
+</ul>
+<h1 id=""><a href="#" class="headerlink" title="&lt;a href&#x3D;”#如何在cmake中开启OpenMP” class&#x3D;”headerlink”"></a>&lt;a href&#x3D;”#如何在cmake中开启OpenMP” class&#x3D;”headerlink”</h1><p>title&#x3D;”如何在cmake中开启OpenMP”&gt;</a>如何在cmake中开启OpenMP</p>
+<p>先看<code>CMakeLists.txt</code>中需要<strong>增加</strong>什么代码</p>
+<figure class="highlight c++">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr>
+<td class="code"><pre><code># omp 并行
+find_package(OpenMP REQUIRED)
+
+<h1 id="设置项目最终需要链接的list"><a href="#设置项目最终需要链接的list" class="headerlink" title="设置项目最终需要链接的list"></a>设置项目最终需要链接的list</h1><p>set(PROJ_INCLUDE_DIRS)<br>set(PROJ_LIBS)<br>set(PROJ_COMPILE_OPTIONS)</p>
+<p>list(APPEND PROJ_LIBS ${OpenMP_CXX_LIBRARIES})<br>list(APPEND PROJ_INCLUDE_DIRS ${OpenMP_CXX_INCLUDE_DIRS})<br>list(APPEND PROJ_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})</p>
+<h1 id="进行链接"><a href="#进行链接" class="headerlink" title="进行链接"></a>进行链接</h1><p>add_executable(test main.cpp)</p>
+<p>target_include_directories(test PRIVATE ${PROJ_INCLUDE_DIRS})<br>target_compile_options(test PRIVATE ${PROJ_COMPILE_OPTIONS})<br>target_link_libraries(test PRIVATE ${PROJ_LIBS})</code></pre></td></p>
+</tr>
+</tbody>
+</table>
+</figure>
+
+<p>有了编译条件，我们来看一下在程序中如何使用</p>
+<figure class="highlight c++">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr>
+<td class="code"><pre><code>#include &lt;iostream&gt;
+#include &quot;omp.h&quot;
+
+<p>int main()<br>{<br>    #pragma omp parallel<br>    std::cout &lt;&lt; &quot;hello world&quot; &lt;&lt; std::endl;<br>    return 0;<br>}</code></pre></td></p>
+</tr>
+</tbody>
+</table>
+</figure>
+
+<ol>
+<li>在头文件中include <code>omp.h</code></li>
+<li>在需要并行运行的代码块前添加语句<code>#pragma omp parallel</code></li>
+</ol>
+<p>我们将代码编译并运行后的结果：<br><img src="/pic%5C2023_6_13_1.jpg"><br>可见，一行代码被运行了16次，omp并行在正常运行，接下来使用到光追中吧</p>
+<h1 id="-1"><a href="#-1" class="headerlink" title="&lt;a href&#x3D;”#在光追中使用omp” class&#x3D;”headerlink”"></a>&lt;a href&#x3D;”#在光追中使用omp” class&#x3D;”headerlink”</h1><p>title&#x3D;”在光追中使用omp”&gt;</a>在光追中使用omp</p>
+<p>光线追踪算法中，从相机出发，逐像素发射一系列光线，跟踪每一条光线得到像素点的值，遍历像素一般是用两个嵌套的for循环来做，这个过程显然可以进行并行计算。</p>
+<figure class="highlight c++">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr>
+<td class="code"><pre><code>for(int i = 0; i &lt; Height; ++i)
+{
+    for(int j = 0; j &lt; Width; ++j){
+        // Generate Rays
+
+<pre><code>    // for ray in Rays:   trace(ray) ...
+}
+</code></pre>
+<p>}</code></pre></td></p>
+</tr>
+</tbody>
+</table>
+</figure>
+
+<p>然而，根据上文的情况看来，使用<code>#pragma omp parallel</code>，会让这个嵌套for循环执行10次，并不会加速算法<br>正确方法是在语句后加上<code>for</code>，即可以对（嵌套）for循环的代码块进行并行运算。</p>
+<figure class="highlight c++">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr>
+<td class="code"><pre><code>#pragma omp parallel for
+for(int i = 0; i &lt; Height; ++i)
+{
+    for(int j = 0; j &lt; Width; ++j){
+        // Generate Rays
+
+<pre><code>    // for ray in Rays:   trace(ray) ...
+}
+</code></pre>
+<p>}</code></pre></td></p>
+</tr>
+</tbody>
+</table>
+</figure>
+
+<p><strong>注意：for循环中的代码片段应是独立得到结果，互不干扰才能正常运行</strong></p>
+<h1 id="错误示例"><a href="#错误示例" class="headerlink" title="错误示例"></a><a href="#错误示例" class="headerlink" title="错误示例"></a>错误示例</h1><p>我在做GAMES101的作业7时，在实现并行运算的过程中得到了这样的结果：<br><img src="/pic%5C2023_6_16_1.png"><br>原因是GAMES提供的框架中，在得到光线结果后，对framebuffer的取值用的是m，且每次循环结束时m++，这就导致不同进程相互干扰，得到错误的结果</p>
+<figure class="highlight c++">
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<tbody>
+<tr>
+<td class="code"><pre><code>for(int i = 0; i &lt; Height; ++i)
+{
+    for(int j = 0; j &lt; Width; ++j){
+        // Generate Rays
+
+<pre><code>    // for ray in Rays:   trace(ray) ...
+    framebuffer[m] = trace(ray);
+    m++;  //错误示范
+}
+</code></pre>
+<p>}</code></pre></td></p>
+</tr>
+</tbody>
+</table>
+</figure>
+
+<div class="post-copyright">
+
+<div class="post-copyright__author">
+
+<p><span class="post-copyright-meta">文章作者:<br></span><span class="post-copyright-info"><a href="http://example.com/">Neo</a></span></p>
+</div>
+
+<div class="post-copyright__type">
+
+<p><span class="post-copyright-meta">文章链接:<br></span><span class="post-copyright-info"><a href="http://example.com/2023/06/13/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/">http://example.com/2023/06/13/【光线追踪】使用OpenMP并行加速程序渲染/</a></span></p>
+</div>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/" data-id="cuidUyetrEuJf2D1FBPznOf-r" data-title="【光线追踪】使用OpenMP并行加速程序渲染" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%85%89%E8%BF%BD-%E6%B8%B2%E6%9F%93/" rel="tag">光追 渲染</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2026/06/09/Unity-Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81%E7%AC%94%E8%AE%B0/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Unity-Shader入门精要笔记
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E9%87%87%E6%A0%B7%E6%89%80%E9%9C%80%E8%A6%81%E7%9A%84%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90%EF%BC%88Windows%E4%B8%8Bg-%E7%9A%84%E5%9D%91%EF%BC%89/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g-的坑）</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Unity-%E6%B8%B2%E6%9F%93/" rel="tag">Unity  渲染</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%85%89%E8%BF%BD-%E6%B8%B2%E6%9F%93/" rel="tag">光追 渲染</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Unity-%E6%B8%B2%E6%9F%93/" style="font-size: 10px;">Unity  渲染</a> <a href="/tags/%E5%85%89%E8%BF%BD-%E6%B8%B2%E6%9F%93/" style="font-size: 20px;">光追 渲染</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/06/">June 2026</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/06/09/Unity-Shader%E5%85%A5%E9%97%A8%E7%B2%BE%E8%A6%81%E7%AC%94%E8%AE%B0/">Unity-Shader入门精要笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E4%BD%BF%E7%94%A8OpenMP%E5%B9%B6%E8%A1%8C%E5%8A%A0%E9%80%9F%E7%A8%8B%E5%BA%8F%E6%B8%B2%E6%9F%93/">【光线追踪】使用OpenMP并行加速程序渲染</a>
+          </li>
+        
+          <li>
+            <a href="/2026/06/09/%E3%80%90%E5%85%89%E7%BA%BF%E8%BF%BD%E8%B8%AA%E3%80%91%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E9%87%87%E6%A0%B7%E6%89%80%E9%9C%80%E8%A6%81%E7%9A%84%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90%EF%BC%88Windows%E4%B8%8Bg-%E7%9A%84%E5%9D%91%EF%BC%89/">【光线追踪】蒙特卡洛采样所需要的随机数生成（Windows下g-的坑）</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
